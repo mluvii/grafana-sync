@@ -6,3 +6,5 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY grafanasync.py /app/
 COPY homedashboard.json /app/
 ENV HOME_DASHBOARD_FILE=/app/homedashboard.json
+
+CMD ["python", "/app/grafanasync.py"]
