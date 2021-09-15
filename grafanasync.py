@@ -24,6 +24,7 @@ homedashboardfile = os.getenv('HOME_DASHBOARD_FILE')
 
 Company = namedtuple('Company',['name','company_id','org_id'])
 User = namedtuple('User',['user_name','email','first_name','last_name','company_id','is_admin'])
+CompanySettings = namedtuple('CompanySettings',['url','organization','bucket','token'])
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -177,19 +178,20 @@ def create_token_auth_header(org):
     return tokenauth
 
 def sync_datasource(org, tokenauth):
-    dsurl, dstoken = get_datasource_url_and_token(org)
-    if dstoken is None:
+    settings = get_metric_settings(org)
+    if settings is None:
         return
     name = 'InfluxDB'
     if not has_datasource(name):
-        create_datasource(org, name, dsurl, dstoken, tokenauth)
+        create_datasource(org, name, settings, tokenauth)
 
-def get_datasource_url_and_token(org):
+def get_metric_settings(org):
     resp = requests.get(f'{mluviiapiurl}/Companies/{org.company_id}/metricSettings', headers=mluviiauth)
     if resp.status_code == 404:
-        return None, None
+        return None
     resp.raise_for_status()
-    return resp.json()["databaseUrl"], resp.json()["databaseToken"]
+    info = resp.json()
+    return CompanySettings(url=info['databaseUrl'], organization=info['databaseOrganization'], bucket=info['databaseBucket'], token=info['databaseToken'])
 
 def has_datasource(name):
     resp = requests.get(f'{grafanaapiurl}/datasources', auth=grafanaauth)
@@ -204,27 +206,27 @@ def get_current_org_id(tokenauth):
     resp.raise_for_status()
     return resp.json()['id']
 
-def create_datasource(org, name, dsurl, dstoken, tokenauth):
+def create_datasource(org, name, settings, tokenauth):
     data = {
         'name': name,
         'type': 'influxdb',
         'typeName': 'InfluxDB',
         'typeLogoUrl': 'public/app/plugins/datasource/influxdb/img/influxdb_logo.svg',
         'access': 'proxy',
-        'url': dsurl,
+        'url': settings.url,
         'password': '',
         'user': '',
         'database': '',
         'basicAuth': True,
         'isDefault': True,
         'jsonData': {
-            'defaultBucket': 'mluvii_realtime',
+            'defaultBucket': settings.bucket,
             'httpMode': 'POST',
-            'organization': f'company_{org.company_id}',
+            'organization': settings.organization,
             'version': 'Flux'
         },
         'secureJsonData': {
-            'token': dstoken
+            'token': settings.token
         },
         'readOnly': True
     }
