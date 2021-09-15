@@ -263,7 +263,7 @@ def generate_dashboard_links(org):
         key = d["key"]
         html = html + f"""
 <li style=\"display:flex; background: rgb(34, 37, 43); padding: 7px; margin: 3px;\">
-<a style=\"display:flex; width: 100%;\" href=\"/dashboard/script/mluvii.js?key={key}&orgId={org.org_id}\">{name}</a>
+<a style=\"display:flex; width: 100%;\" href=\"{grafanaurl}/dashboard/script/mluvii.js?key={key}&orgId={org.org_id}\">{name}</a>
 </li>
 """
     return html + "</ul>"
