@@ -82,7 +82,7 @@ def get_mluvii_company(id):
     return resp.json()['name'], resp.json()['id']
 
 def create_org(name):
-    print(f'Organization {name}')
+    print(f'Creating organization {name}')
     resp = requests.post(f'{grafanaapiurl}/orgs', auth=grafanaauth, data={'name':name})
     resp.raise_for_status()
     return resp.json()['orgId']
@@ -109,6 +109,7 @@ def sync_org(org, users):
     sync_home_dashboard(org, tokenauth)
 
 def create_users(org, users):
+    print(f'Syncing {len(users)} users')
     existing_users = get_org_users(org)
     for _, u in users.items():
         if (u.company_id == org.company_id) and (not u.user_name in existing_users):
@@ -149,7 +150,7 @@ def create_user(u, org):
     }
     resp = requests.post(f'{grafanaapiurl}/admin/users', auth=grafanaauth, json=data)
     if resp.status_code != 412:
-        print(f'User {u.user_name} in org {org.org_id}')
+        print(f'Created user {u.user_name} in org {org.org_id}')
         resp.raise_for_status()
 
 def switch_org(org):
@@ -303,12 +304,14 @@ def sync_roles(org, users):
 
 if __name__ == '__main__':
     companyids = parse_arguments()
-    print (f'Will sync companies {companyids}' if companyids is not None else 'Will sync company based on the api client id')
+    print(f'Will sync companies {companyids}' if companyids is not None else 'Will sync company based on the api client id')
     orgs = sync_orgs(companyids)
     allusers = {}
     for _, org in orgs.items():
+        print(f'Syncing organization {org.name}')
         users = get_mluvii_users(org)
         allusers.update(users)
         sync_org(org, users)
     for _, org in orgs.items():
+        print(f'Syncing roles in organization {org.name}')
         sync_roles(org, allusers)
