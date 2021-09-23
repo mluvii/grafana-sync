@@ -92,7 +92,13 @@ def get_mluvii_users(org):
     resp.raise_for_status()
     users = {}
     for u in resp.json():
-        users[u['username']] = User(u['username'], u['email'], u['firstName'], u['lastName'], org.company_id, 'Admin' in u['globalRoles'])
+        is_admin = 'Admin' in u['globalRoles']
+        is_company_admin = 'CompanyAdmin' in u['globalRoles']
+        if not u['enabled']:
+            continue
+        if not (is_admin or is_company_admin):
+            continue
+        users[u['username']] = User(u['username'], u['email'], u['firstName'], u['lastName'], org.company_id, is_admin)
     return users
 
 def sync_org(org, users):
